@@ -480,6 +480,18 @@ class Environment:
             resp = f"Error: {e}"
             error = True
         logger.debug(f"Response: {resp}")
+        from tau2.data_model.image import ImageObservation
+
+        if isinstance(resp, ImageObservation):
+            return ToolMessage(
+                id=message.id,
+                content=resp.alt_text,
+                image_content=resp.image_b64,
+                image_alt=resp.alt_text,
+                requestor=message.requestor,
+                role="tool",
+                error=error,
+            )
         resp = self.to_json_str(resp)
         return ToolMessage(
             id=message.id,

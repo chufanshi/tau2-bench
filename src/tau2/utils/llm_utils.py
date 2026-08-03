@@ -172,7 +172,21 @@ def to_litellm_messages(messages: list[Message]) -> list[dict]:
     litellm_messages = []
     for message in messages:
         if isinstance(message, UserMessage):
-            litellm_messages.append({"role": "user", "content": message.content})
+            if getattr(message, "image_content", None):
+                blocks = []
+                if message.content:
+                    blocks.append({"type": "text", "text": message.content})
+                blocks.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{message.image_content}"
+                        },
+                    }
+                )
+                litellm_messages.append({"role": "user", "content": blocks})
+            else:
+                litellm_messages.append({"role": "user", "content": message.content})
         elif isinstance(message, AssistantMessage):
             tool_calls = None
             if message.is_tool_call():
@@ -196,13 +210,43 @@ def to_litellm_messages(messages: list[Message]) -> list[dict]:
                 }
             )
         elif isinstance(message, ToolMessage):
-            litellm_messages.append(
-                {
-                    "role": "tool",
-                    "content": message.content,
-                    "tool_call_id": message.id,
-                }
-            )
+            if getattr(message, "image_content", None):
+                # Providers do not uniformly accept image blocks in tool-role
+                # messages; emit a placeholder tool result, then inject the
+                # image as a user-role message tied to the tool call id.
+                alt = message.image_alt or "Image observation attached."
+                litellm_messages.append(
+                    {
+                        "role": "tool",
+                        "content": f"{alt} (see attached image below)",
+                        "tool_call_id": message.id,
+                    }
+                )
+                litellm_messages.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": f"[Attachment: output of tool call {message.id}]",
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/png;base64,{message.image_content}"
+                                },
+                            },
+                        ],
+                    }
+                )
+            else:
+                litellm_messages.append(
+                    {
+                        "role": "tool",
+                        "content": message.content,
+                        "tool_call_id": message.id,
+                    }
+                )
         elif isinstance(message, SystemMessage):
             litellm_messages.append({"role": "system", "content": message.content})
     return litellm_messages

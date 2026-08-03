@@ -221,6 +221,16 @@ class ParticipantMessageBase(BaseModel):
         default=None,
     )
 
+    # --- Image data (tau-vision) ---
+    image_content: Optional[str] = Field(
+        description="Base64-encoded PNG attached to this message (tau-vision).",
+        default=None,
+    )
+    image_alt: Optional[str] = Field(
+        description="Short non-leaking placeholder text describing that an image is attached.",
+        default=None,
+    )
+
     # --- Audio data ---
     audio_format: Optional[AudioFormat] = Field(
         description="The format of the audio data.", default=None
@@ -559,6 +569,14 @@ class ToolMessage(BaseModel):
     id: str = Field(description="The unique identifier for the tool call.")
     role: ToolRole = Field(description="The role of the message sender.")
     content: Optional[str] = Field(description="The output of the tool.", default=None)
+    image_content: Optional[str] = Field(
+        description="Base64-encoded PNG returned by the tool (tau-vision observation_modality=vision).",
+        default=None,
+    )
+    image_alt: Optional[str] = Field(
+        description="Short non-leaking placeholder text for the attached image.",
+        default=None,
+    )
     requestor: Literal["user", "assistant"] = Field(
         "assistant",
         description="The requestor of the tool call.",

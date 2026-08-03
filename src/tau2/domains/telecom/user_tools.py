@@ -74,9 +74,53 @@ class TelecomUserTools(ToolKitBase):
 
     # --- Status Bar ---
     @is_tool(ToolType.READ)
-    def check_status_bar(self) -> str:
+    def check_status_bar(self):
         """Shows what icons are currently visible in your phone's status bar (the area at the top of the screen). Displays network signal strength, mobile data status (enabled, disabled, data saver), Wi-Fi status, and battery level."""
+        import os
+
+        if os.environ.get("TAU2_OBSERVATION_MODALITY", "text") == "vision":
+            return self._check_status_bar_vision()
         return f"Status Bar: {self._check_status_bar()}"
+
+    def _check_status_bar_vision(self):
+        """tau-vision arm: render the same device state as a screenshot.
+
+        Requires the `tauvision` package. Theme is controlled by
+        TAU2_IMAGE_SEED (constant within a run: same phone, same theme).
+        """
+        import base64
+        import io
+        import os
+
+        from tauvision.renderers.status_bar import (
+            StatusBarKappa,
+            render_status_bar,
+        )
+
+        from tau2.data_model.image import ImageObservation
+
+        device = self.device
+        k = StatusBarKappa(
+            airplane_mode=device.airplane_mode,
+            signal_strength=device.network_signal_strength.value,
+            network_technology=device.network_technology_connected.value,
+            data_enabled=device.data_enabled,
+            data_saver_mode=device.data_saver_mode,
+            wifi_enabled=device.wifi_enabled,
+            wifi_connected=device.wifi_connected,
+            wifi_ssid=device.wifi_ssid,
+            vpn_connected=device.vpn_connected,
+            battery_level=device.battery_level,
+        )
+        seed = int(os.environ.get("TAU2_IMAGE_SEED", "0"))
+        img = render_status_bar(k, image_seed=seed)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return ImageObservation(
+            image_b64=base64.b64encode(buf.getvalue()).decode(),
+            alt_text="Screenshot of the phone's status bar attached.",
+            kappa=k.model_dump(mode="json"),
+        )
 
     def _check_status_bar(self) -> str:
         """
