@@ -82,6 +82,24 @@ class TelecomUserTools(ToolKitBase):
             return self._check_status_bar_vision()
         return f"Status Bar: {self._check_status_bar()}"
 
+    def _with_status_bar(self, prefix: str):
+        """Compose a tool result that surfaces the current status bar.
+
+        text mode: prefix + textual status bar (byte-identical to upstream).
+        vision mode: ImageObservation whose alt_text carries ONLY the action
+        confirmation -- the status-bar facts appear exclusively in the
+        rendered screenshot (information-monopoly discipline).
+        """
+        import os
+
+        if os.environ.get("TAU2_OBSERVATION_MODALITY", "text") == "vision":
+            obs = self._check_status_bar_vision()
+            obs.alt_text = (
+                f"{prefix}\n(Screenshot of the current status bar attached.)"
+            )
+            return obs
+        return f"{prefix}\nStatus Bar: {self._check_status_bar()}"
+
     def _check_status_bar_vision(self):
         """tau-vision arm: render the same device state as a screenshot.
 
@@ -236,9 +254,9 @@ class TelecomUserTools(ToolKitBase):
         """Changes the type of cellular network your phone prefers to connect to (e.g., 5G, LTE/4G, 3G). Higher-speed networks (LTE/5G) provide faster data but may use more battery."""
         valid_mode = self._set_network_mode_preference(mode)
         if valid_mode is None:
-            return f"Failed to set network mode: '{mode}' is not a valid option. Please use one of: {', '.join([m.value for m in NetworkModePreference])}\nStatus Bar: {self._check_status_bar()}"
+            return self._with_status_bar(f"Failed to set network mode: '{mode}' is not a valid option. Please use one of: {', '.join([m.value for m in NetworkModePreference])}")
         status_update = f"Preferred Network Mode set to: {valid_mode.value}"
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _set_network_mode_preference(
         self, mode: Union[NetworkModePreference, str]
@@ -414,7 +432,7 @@ class TelecomUserTools(ToolKitBase):
         """
         new_state = self._toggle_airplane_mode()
         status_update = f"Airplane Mode is now {'ON' if new_state else 'OFF'}."
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _toggle_airplane_mode(self) -> bool:
         """
@@ -480,7 +498,7 @@ class TelecomUserTools(ToolKitBase):
     def reseat_sim_card(self) -> str:
         """Simulates removing and reinserting your SIM card. This can help resolve recognition issues."""
         status_update = self._reseat_sim_card()
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _reseat_sim_card(self) -> str:
         """Re-seats the SIM card by removing and re-inserting it."""
@@ -519,7 +537,7 @@ class TelecomUserTools(ToolKitBase):
         """
         new_state = self._toggle_data()
         status_update = f"Mobile Data is now {'ON' if new_state else 'OFF'}."
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _toggle_data(self) -> bool:
         """Toggles the master Mobile Data switch. Returns the new state."""
@@ -547,7 +565,7 @@ class TelecomUserTools(ToolKitBase):
         """
         new_state = self._toggle_roaming()
         status_update = f"Data Roaming is now {'ON' if new_state else 'OFF'}."
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _toggle_roaming(self) -> bool:
         """Toggles the Data Roaming setting. Returns the new state."""
@@ -594,7 +612,7 @@ class TelecomUserTools(ToolKitBase):
         """
         new_state = self._toggle_data_saver_mode()
         status_update = f"Data Saver Mode is now {'ON' if new_state else 'OFF'}."
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _toggle_data_saver_mode(self) -> bool:
         """Toggles Data Saver mode. Returns the new state."""
@@ -638,7 +656,7 @@ class TelecomUserTools(ToolKitBase):
             apn_settings = APNSettings(**apn_settings)
         status_update = self._set_apn_settings(apn_settings)
         self.simulate_network_search()
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _set_apn_settings(self, apn_settings: APNSettings) -> str:
         """Sets the APN settings for the phone."""
@@ -650,7 +668,7 @@ class TelecomUserTools(ToolKitBase):
         """Resets your APN settings to the default settings."""
         apn_status = self._reset_apn_settings()
         self.simulate_network_search()
-        return f"{apn_status}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(apn_status)
 
     def _reset_apn_settings(self):
         """Resets your APN settings to the default settings. This will be applied at the next reboot."""
@@ -698,9 +716,9 @@ class TelecomUserTools(ToolKitBase):
         """
         new_state = self._toggle_wifi()
         if new_state is None:
-            return f"Cannot change Wi-Fi settings while Airplane Mode is ON.\nStatus Bar: {self._check_status_bar()}"
+            return self._with_status_bar("Cannot change Wi-Fi settings while Airplane Mode is ON.")
         status_update = f"Wi-Fi is now {'ON' if new_state else 'OFF'}."
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _toggle_wifi(self) -> Optional[bool]:
         """Toggles the Wi-Fi radio. Returns the new state."""
@@ -738,7 +756,7 @@ class TelecomUserTools(ToolKitBase):
         """
         new_state = self._toggle_wifi_calling()
         status_update = f"Wi-Fi Calling is now {'ON' if new_state else 'OFF'}."
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _toggle_wifi_calling(self) -> bool:
         """Toggles the Wi-Fi Calling setting. Returns the new state."""
@@ -797,7 +815,7 @@ class TelecomUserTools(ToolKitBase):
             if connected
             else "No VPN connection to connect."
         )
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _connect_vpn(self) -> Optional[bool]:
         """Connects to a VPN (Virtual Private Network).
@@ -818,7 +836,7 @@ class TelecomUserTools(ToolKitBase):
             if disconnected
             else "No active VPN connection to disconnect."
         )
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _disconnect_vpn(self) -> bool:
         """Disconnects any active VPN connection."""
@@ -911,7 +929,7 @@ class TelecomUserTools(ToolKitBase):
         """
         success, message = self._grant_app_permission(app_name, permission)
         result = "Success. " if success else "Error. "
-        return f"{result}{message}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(f"{result}{message}")
 
     def _grant_app_permission(self, app_name: str, permission: str) -> Tuple[bool, str]:
         """Grants a specific permission to an app."""
@@ -986,7 +1004,7 @@ class TelecomUserTools(ToolKitBase):
     def reboot_device(self) -> str:
         """Restarts your phone completely. This can help resolve many temporary software glitches by refreshing all running services and connections."""
         status_update = self._reboot_device()
-        return f"{status_update}\nStatus Bar: {self._check_status_bar()}"
+        return self._with_status_bar(status_update)
 
     def _reboot_device(self) -> str:
         """
