@@ -202,8 +202,12 @@ class TelecomUserTools(ToolKitBase):
 
     # --- Network (General) ---
     @is_tool(ToolType.READ)
-    def check_network_status(self) -> str:
+    def check_network_status(self):
         """Checks your phone's connection status to cellular networks and Wi-Fi. Shows airplane mode status, signal strength, network type, whether mobile data is enabled, and whether data roaming is enabled."""
+        import os
+
+        if os.environ.get("TAU2_OBSERVATION_MODALITY", "text") == "vision":
+            return self._check_network_status_vision()
         status = self._check_network_status()
         lines = [
             f"Airplane Mode: {'ON' if status['airplane_mode'] else 'OFF'}",
@@ -219,6 +223,42 @@ class TelecomUserTools(ToolKitBase):
         if status["wifi_connected"]:
             lines.append(f"Connected Wi-Fi Network: {status['wifi_ssid']}")
         return "\n".join(lines)
+
+    def _check_network_status_vision(self):
+        """tau-vision arm: render the network-settings screen for the same state."""
+        import base64
+        import io
+        import os
+
+        from tauvision.renderers.network_status import (
+            NetworkStatusKappa,
+            render_network_status,
+        )
+
+        from tau2.data_model.image import ImageObservation
+
+        status = self._check_network_status()
+        k = NetworkStatusKappa(
+            airplane_mode=status["airplane_mode"],
+            sim_status=status["sim_status"].value,
+            connection_status=status["connection_status"].value,
+            signal_strength=status["signal_strength"].value,
+            network_technology=status["network_technology"].value,
+            mobile_data_enabled=status["mobile_data_enabled"],
+            data_roaming_enabled=status["data_roaming_enabled"],
+            wifi_enabled=status["wifi_enabled"],
+            wifi_connected=status["wifi_connected"],
+            wifi_ssid=status["wifi_ssid"],
+        )
+        seed = int(os.environ.get("TAU2_IMAGE_SEED", "0"))
+        img = render_network_status(k, image_seed=seed)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return ImageObservation(
+            image_b64=base64.b64encode(buf.getvalue()).decode(),
+            alt_text="Screenshot of the phone's network settings screen attached.",
+            kappa=k.model_dump(mode="json"),
+        )
 
     def _check_network_status(self) -> Dict[str, Any]:
         """
@@ -696,6 +736,7 @@ class TelecomUserTools(ToolKitBase):
         if not status["enabled"]:
             return "Wi-Fi is turned OFF."
         if status["connected"]:
+        # TODO(tau-vision): observation-type tool; needs a wifi-panel renderer in vision mode (minor leak channel).
             return f"Wi-Fi is ON and connected to '{status['ssid']}'. Signal strength: {status['signal_strength'].value}."
         else:
             return "Wi-Fi is ON but not connected to any network."
