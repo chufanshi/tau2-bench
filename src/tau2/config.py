@@ -1,3 +1,4 @@
+import os
 # =============================================================================
 # SIMULATION DEFAULTS (overridable via CLI)
 # =============================================================================
@@ -21,9 +22,17 @@ DEFAULT_LLM_TEMPERATURE_USER = 0.0
 DEFAULT_LLM_ARGS_AGENT = {"temperature": DEFAULT_LLM_TEMPERATURE_AGENT}
 DEFAULT_LLM_ARGS_USER = {"temperature": DEFAULT_LLM_TEMPERATURE_USER}
 
-DEFAULT_LLM_NL_ASSERTIONS = "gpt-4.1-2025-04-14"
+DEFAULT_LLM_NL_ASSERTIONS = os.environ.get(
+    "TAU2_NL_JUDGE_MODEL", "gpt-4.1-2025-04-14"
+)
 DEFAULT_LLM_NL_ASSERTIONS_TEMPERATURE = 0.0
 DEFAULT_LLM_NL_ASSERTIONS_ARGS = {"temperature": DEFAULT_LLM_NL_ASSERTIONS_TEMPERATURE}
+# tau-vision: allow pointing the NL-assertion judge at a local server
+if os.environ.get("TAU2_NL_JUDGE_API_BASE"):
+    DEFAULT_LLM_NL_ASSERTIONS_ARGS.update(
+        api_base=os.environ["TAU2_NL_JUDGE_API_BASE"],
+        api_key=os.environ.get("TAU2_NL_JUDGE_API_KEY", "dummy"),
+    )
 
 DEFAULT_LLM_ENV_INTERFACE = "gpt-4.1-2025-04-14"
 DEFAULT_LLM_ENV_INTERFACE_TEMPERATURE = 0.0
