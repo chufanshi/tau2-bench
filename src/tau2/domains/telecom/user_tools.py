@@ -78,7 +78,7 @@ class TelecomUserTools(ToolKitBase):
         """Shows what icons are currently visible in your phone's status bar (the area at the top of the screen). Displays network signal strength, mobile data status (enabled, disabled, data saver), Wi-Fi status, and battery level."""
         import os
 
-        if os.environ.get("TAU2_OBSERVATION_MODALITY", "text") == "vision":
+        if os.environ.get("TAU2_OBSERVATION_MODALITY", "text") in ("vision", "vision_strict"):
             return self._check_status_bar_vision()
         return f"Status Bar: {self._check_status_bar()}"
 
@@ -92,7 +92,7 @@ class TelecomUserTools(ToolKitBase):
         """
         import os
 
-        if os.environ.get("TAU2_OBSERVATION_MODALITY", "text") == "vision":
+        if os.environ.get("TAU2_OBSERVATION_MODALITY", "text") in ("vision", "vision_strict"):
             obs = self._check_status_bar_vision()
             obs.alt_text = (
                 f"{prefix}\n(Screenshot of the current status bar attached.)"
@@ -206,7 +206,7 @@ class TelecomUserTools(ToolKitBase):
         """Checks your phone's connection status to cellular networks and Wi-Fi. Shows airplane mode status, signal strength, network type, whether mobile data is enabled, and whether data roaming is enabled."""
         import os
 
-        if os.environ.get("TAU2_OBSERVATION_MODALITY", "text") == "vision":
+        if os.environ.get("TAU2_OBSERVATION_MODALITY", "text") in ("vision", "vision_strict"):
             return self._check_network_status_vision()
         status = self._check_network_status()
         lines = [

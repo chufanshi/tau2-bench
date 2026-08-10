@@ -86,11 +86,12 @@ class ActionEvaluator(EvaluatorBase[Message]):
                 info={"note": "No evaluation criteria"},
                 reward_breakdown={RewardType.ACTION: 1.0},
             )
-        golden_actions = task.evaluation_criteria.actions
-        if not golden_actions:
+        golden_actions = task.evaluation_criteria.actions or []
+        forbidden_actions = set(task.evaluation_criteria.forbidden_actions)
+        if not golden_actions and not forbidden_actions:
             return RewardInfo(
                 reward=1.0,
-                info={"note": "No actions to evaluate"},
+                info={"note": "No required or forbidden actions to evaluate"},
                 reward_breakdown={RewardType.ACTION: 1.0},
             )
 
@@ -98,14 +99,20 @@ class ActionEvaluator(EvaluatorBase[Message]):
             full_trajectory, golden_actions, tool_types
         )
 
-        # Calculate reward: 1 if all expectations are met, 0 otherwise
+        predicted = cls.extract_tool_calls(full_trajectory)
+        forbidden_called = sorted(
+            {call.name for call in predicted if call.name in forbidden_actions}
+        )
+
+        # Calculate reward: required calls must be present and forbidden calls absent.
         all_expectations_met = all(result.action_match for result in action_checks)
-        reward = 1.0 if all_expectations_met else 0.0
+        reward = 1.0 if all_expectations_met and not forbidden_called else 0.0
 
         return RewardInfo(
             reward=reward,
             action_checks=action_checks,
             reward_breakdown={RewardType.ACTION: reward},
+            info={"forbidden_actions_called": forbidden_called},
         )
 
     @classmethod
@@ -177,11 +184,12 @@ class FullDuplexActionEvaluator(EvaluatorBase[Tick]):
                 info={"note": "No evaluation criteria"},
                 reward_breakdown={RewardType.ACTION: 1.0},
             )
-        golden_actions = task.evaluation_criteria.actions
-        if not golden_actions:
+        golden_actions = task.evaluation_criteria.actions or []
+        forbidden_actions = set(task.evaluation_criteria.forbidden_actions)
+        if not golden_actions and not forbidden_actions:
             return RewardInfo(
                 reward=1.0,
-                info={"note": "No actions to evaluate"},
+                info={"note": "No required or forbidden actions to evaluate"},
                 reward_breakdown={RewardType.ACTION: 1.0},
             )
 
@@ -189,14 +197,20 @@ class FullDuplexActionEvaluator(EvaluatorBase[Tick]):
             full_trajectory, golden_actions, tool_types
         )
 
-        # Calculate reward: 1 if all expectations are met, 0 otherwise
+        predicted = cls.extract_tool_calls(full_trajectory)
+        forbidden_called = sorted(
+            {call.name for call in predicted if call.name in forbidden_actions}
+        )
+
+        # Calculate reward: required calls must be present and forbidden calls absent.
         all_expectations_met = all(result.action_match for result in action_checks)
-        reward = 1.0 if all_expectations_met else 0.0
+        reward = 1.0 if all_expectations_met and not forbidden_called else 0.0
 
         return RewardInfo(
             reward=reward,
             action_checks=action_checks,
             reward_breakdown={RewardType.ACTION: reward},
+            info={"forbidden_actions_called": forbidden_called},
         )
 
     @classmethod

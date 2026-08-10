@@ -1,0 +1,20 @@
+{
+  "base": [
+    "retail_vision_003",
+    "retail_vision_017_conflict_p0",
+    "retail_vision_017_conflict_p1",
+    "retail_vision_017_consistent_p0",
+    "retail_vision_017_consistent_p1",
+    "retail_vision_031",
+    "retail_vision_042"
+  ],
+  "pilot": [
+    "retail_vision_003",
+    "retail_vision_017_conflict_p0",
+    "retail_vision_017_conflict_p1",
+    "retail_vision_017_consistent_p0",
+    "retail_vision_017_consistent_p1",
+    "retail_vision_031",
+    "retail_vision_042"
+  ]
+}

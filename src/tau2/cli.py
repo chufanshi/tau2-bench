@@ -121,6 +121,15 @@ def add_run_args(parser):
         help="(Optional) run only the tasks with the given IDs. If not provided, will run all tasks.",
     )
     parser.add_argument(
+        "--vision-release-dir",
+        type=str,
+        default=None,
+        help=(
+            "Published tau-vision release directory. Required to run frozen "
+            "retail-vision image tasks."
+        ),
+    )
+    parser.add_argument(
         "--num-tasks",
         type=int,
         default=None,
@@ -639,6 +648,7 @@ def main():
             task_set_name=args.task_set_name,
             task_split_name=args.task_split_name,
             task_ids=args.task_ids,
+            vision_release_dir=args.vision_release_dir,
             num_tasks=args.num_tasks,
             llm_user=args.user_llm,
             llm_args_user=args.user_llm_args,

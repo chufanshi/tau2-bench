@@ -36,6 +36,7 @@ from tau2.user.user_simulator_base import (
 )
 from tau2.utils.llm_utils import get_cost
 from tau2.utils.utils import format_time, get_now
+from tau2.vision.runtime import resolve_image_trigger
 
 
 class Role(str, Enum):
@@ -453,9 +454,15 @@ class Orchestrator(BaseOrchestrator[AgentT, UserT, Message]):
         self.from_role: Optional[Role] = None
         self.to_role: Optional[Role] = None
         self.message: Optional[Message] = None
+        self._fired_image_triggers: set[int] = set()
 
         # Validate mode compatibility
         self._validate_mode_compatibility()
+        if self.task.image_triggers and not self.task.runtime_image_assets:
+            raise ValueError(
+                f"visual task {self.task.id} requires a published release; "
+                "run with --vision-release-dir"
+            )
 
     def _validate_mode_compatibility(self):
         """
@@ -841,6 +848,30 @@ class Orchestrator(BaseOrchestrator[AgentT, UserT, Message]):
             user_msg, self.user_state = self.user.generate_next_message(
                 self.message, self.user_state
             )
+            first_user_turn = not any(
+                isinstance(message, UserMessage) for message in self.trajectory
+            )
+            event = "opening" if first_user_turn else "on_request"
+            agent_text = (
+                self.message.content
+                if isinstance(self.message, AssistantMessage)
+                else None
+            )
+            runtime_image = resolve_image_trigger(
+                task=self.task,
+                event=event,
+                agent_text=agent_text,
+                image_seed=self.seed or 0,
+                fired_trigger_indices=self._fired_image_triggers,
+            )
+            if runtime_image is not None:
+                if user_msg.image_content:
+                    raise ValueError(
+                        "user simulator and tau-vision trigger both attached an image"
+                    )
+                user_msg.image_content = runtime_image.image_content
+                user_msg.image_alt = runtime_image.alt_text
+                self._fired_image_triggers.add(runtime_image.trigger_index)
             user_msg.validate()
             if UserSimulator.is_stop(user_msg):
                 self.done = True

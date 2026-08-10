@@ -155,11 +155,25 @@ class UserSimulator(
             "<PERSONA_GUIDELINES>", persona_guidelines
         )
 
+        import os as _os
+
+        _strict = ""
+        if _os.environ.get("TAU2_USER_CANNOT_TRANSCRIBE") == "1":
+            _strict = (
+                "\n## Technical Literacy Constraint\n"
+                "You are NOT tech-savvy. When your phone tools show you a screen "
+                "or screenshot, you attach/share it but you CANNOT read out, "
+                "interpret, or transcribe technical values, icons, toggles, or "
+                "settings in text. If the agent asks you to describe what is on "
+                "a screen, say you do not understand these technical details and "
+                "point to the screenshot you already shared. Never state numeric "
+                "values, statuses, or icon meanings from any screen.\n"
+            )
         system_prompt = SYSTEM_PROMPT.format(
             global_user_sim_guidelines_with_persona=guidelines_with_persona,
             instructions=self.instructions,
         )
-        return system_prompt
+        return system_prompt + _strict
 
     def get_init_state(
         self, message_history: Optional[list[Message]] = None

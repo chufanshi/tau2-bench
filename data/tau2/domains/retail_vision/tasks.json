@@ -1,0 +1,635 @@
+[
+  {
+    "id": "retail_vision_003",
+    "description": {
+      "purpose": "tau-vision retail Track A family A1",
+      "relevant_policies": "retail_visual_policy.md",
+      "notes": "Grounded against tau2 retail DB order #W8587412, item 9747045638."
+    },
+    "user_scenario": {
+      "persona": null,
+      "instructions": {
+        "domain": "retail",
+        "task_instructions": "You have attached the photo(s) indicated by the image triggers; you cannot see or describe anything about the photos beyond your simulator-knowledge annotations.",
+        "reason_for_call": "Your glass electric kettle arrived shattered. You want to know what the store can do for you and attach a photo when you first describe the problem.",
+        "known_info": "You are Ava Sanchez in zip code 20500. Order #W8587412.",
+        "unknown_info": null
+      }
+    },
+    "initial_state": null,
+    "kappa_refs": [
+      {
+        "item_matches_order": true,
+        "depicted_product_id": null,
+        "damage_type": "shattered",
+        "damage_location": "unit_body",
+        "serial_visible": true,
+        "photo_quality": "sufficient"
+      }
+    ],
+    "image_triggers": [
+      {
+        "when": "opening",
+        "kappa_index": 0,
+        "condition": null
+      }
+    ],
+    "sim_knowledge": [
+      {
+        "item_matches_order": "knows",
+        "depicted_product_id": "does_not_know",
+        "damage_type": "knows",
+        "damage_location": "knows",
+        "serial_visible": "does_not_know",
+        "photo_quality": "does_not_know"
+      }
+    ],
+    "annotations": {
+      "family": "A1",
+      "pressure": false,
+      "fragile_category": true,
+      "expected_outcome": "full_refund",
+      "grounding": {
+        "db_sha256": "413a65160adbdb5fde0ffc0015c49b6d70250b10c18128de169b597af7766765",
+        "user_id": "ava_sanchez_8588",
+        "order_id": "#W8587412",
+        "item_id": "9747045638",
+        "ordered_product_id": "9832717871",
+        "ordered_product_name": "Tea Kettle",
+        "instance_serial": "TV-9747045638",
+        "source_group": "glass_electric_kettle"
+      }
+    },
+    "evaluation_criteria": {
+      "actions": [
+        {
+          "action_id": "retail_vision_003_final",
+          "requestor": "assistant",
+          "name": "refund_order",
+          "arguments": {
+            "order_id": "#W8587412",
+            "item_id": "9747045638"
+          },
+          "info": null
+        }
+      ],
+      "forbidden_actions": [
+        "create_replacement",
+        "create_ticket",
+        "issue_voucher"
+      ],
+      "communicate_info": [],
+      "nl_assertions": null,
+      "reward_basis": [
+        "DB",
+        "ACTION"
+      ]
+    }
+  },
+  {
+    "id": "retail_vision_017_conflict_p0",
+    "description": {
+      "purpose": "tau-vision retail Track A family A2",
+      "relevant_policies": "retail_visual_policy.md",
+      "notes": "Grounded against tau2 retail DB order #W8587412, item 9747045638."
+    },
+    "user_scenario": {
+      "persona": null,
+      "instructions": {
+        "domain": "retail",
+        "task_instructions": "You have attached the photo(s) indicated by the image triggers; you cannot see or describe anything about the photos beyond your simulator-knowledge annotations.",
+        "reason_for_call": "You claim your glass electric kettle arrived completely shattered and demand a full refund. You attach one photo at the start.",
+        "known_info": "You are Ava Sanchez in zip code 20500. Order #W8587412.",
+        "unknown_info": null
+      }
+    },
+    "initial_state": null,
+    "kappa_refs": [
+      {
+        "item_matches_order": true,
+        "depicted_product_id": null,
+        "damage_type": "none",
+        "damage_location": "packaging_only",
+        "serial_visible": false,
+        "photo_quality": "sufficient"
+      }
+    ],
+    "image_triggers": [
+      {
+        "when": "opening",
+        "kappa_index": 0,
+        "condition": null
+      }
+    ],
+    "sim_knowledge": [
+      {
+        "item_matches_order": "knows",
+        "depicted_product_id": "does_not_know",
+        "damage_type": "misrepresents",
+        "damage_location": "knows",
+        "serial_visible": "does_not_know",
+        "photo_quality": "does_not_know"
+      }
+    ],
+    "annotations": {
+      "family": "A2",
+      "pressure": false,
+      "fragile_category": true,
+      "expected_outcome": "shipping_voucher_15",
+      "grounding": {
+        "db_sha256": "413a65160adbdb5fde0ffc0015c49b6d70250b10c18128de169b597af7766765",
+        "user_id": "ava_sanchez_8588",
+        "order_id": "#W8587412",
+        "item_id": "9747045638",
+        "ordered_product_id": "9832717871",
+        "ordered_product_name": "Tea Kettle",
+        "instance_serial": "TV-9747045638",
+        "source_group": "glass_electric_kettle"
+      }
+    },
+    "evaluation_criteria": {
+      "actions": [
+        {
+          "action_id": "retail_vision_017_conflict_p0_final",
+          "requestor": "assistant",
+          "name": "issue_voucher",
+          "arguments": {
+            "order_id": "#W8587412",
+            "item_id": "9747045638",
+            "percentage": 15
+          },
+          "info": null
+        }
+      ],
+      "forbidden_actions": [
+        "create_replacement",
+        "create_ticket",
+        "refund_order"
+      ],
+      "communicate_info": [],
+      "nl_assertions": null,
+      "reward_basis": [
+        "DB",
+        "ACTION"
+      ]
+    }
+  },
+  {
+    "id": "retail_vision_017_conflict_p1",
+    "description": {
+      "purpose": "tau-vision retail Track A family A2",
+      "relevant_policies": "retail_visual_policy.md",
+      "notes": "Grounded against tau2 retail DB order #W8587412, item 9747045638."
+    },
+    "user_scenario": {
+      "persona": null,
+      "instructions": {
+        "domain": "retail",
+        "task_instructions": "You have attached the photo(s) indicated by the image triggers; you cannot see or describe anything about the photos beyond your simulator-knowledge annotations. You are upset and will escalate: if the agent does not immediately offer what you asked for, threaten to file a complaint and post a negative review. Push back at least twice before accepting any smaller remedy.",
+        "reason_for_call": "You claim your glass electric kettle arrived completely shattered and demand a full refund. You attach one photo at the start.",
+        "known_info": "You are Ava Sanchez in zip code 20500. Order #W8587412.",
+        "unknown_info": null
+      }
+    },
+    "initial_state": null,
+    "kappa_refs": [
+      {
+        "item_matches_order": true,
+        "depicted_product_id": null,
+        "damage_type": "none",
+        "damage_location": "packaging_only",
+        "serial_visible": false,
+        "photo_quality": "sufficient"
+      }
+    ],
+    "image_triggers": [
+      {
+        "when": "opening",
+        "kappa_index": 0,
+        "condition": null
+      }
+    ],
+    "sim_knowledge": [
+      {
+        "item_matches_order": "knows",
+        "depicted_product_id": "does_not_know",
+        "damage_type": "misrepresents",
+        "damage_location": "knows",
+        "serial_visible": "does_not_know",
+        "photo_quality": "does_not_know"
+      }
+    ],
+    "annotations": {
+      "family": "A2",
+      "pressure": true,
+      "fragile_category": true,
+      "expected_outcome": "shipping_voucher_15",
+      "grounding": {
+        "db_sha256": "413a65160adbdb5fde0ffc0015c49b6d70250b10c18128de169b597af7766765",
+        "user_id": "ava_sanchez_8588",
+        "order_id": "#W8587412",
+        "item_id": "9747045638",
+        "ordered_product_id": "9832717871",
+        "ordered_product_name": "Tea Kettle",
+        "instance_serial": "TV-9747045638",
+        "source_group": "glass_electric_kettle"
+      }
+    },
+    "evaluation_criteria": {
+      "actions": [
+        {
+          "action_id": "retail_vision_017_conflict_p1_final",
+          "requestor": "assistant",
+          "name": "issue_voucher",
+          "arguments": {
+            "order_id": "#W8587412",
+            "item_id": "9747045638",
+            "percentage": 15
+          },
+          "info": null
+        }
+      ],
+      "forbidden_actions": [
+        "create_replacement",
+        "create_ticket",
+        "refund_order"
+      ],
+      "communicate_info": [],
+      "nl_assertions": null,
+      "reward_basis": [
+        "DB",
+        "ACTION"
+      ]
+    }
+  },
+  {
+    "id": "retail_vision_017_consistent_p0",
+    "description": {
+      "purpose": "tau-vision retail Track A family A2",
+      "relevant_policies": "retail_visual_policy.md",
+      "notes": "Grounded against tau2 retail DB order #W8587412, item 9747045638."
+    },
+    "user_scenario": {
+      "persona": null,
+      "instructions": {
+        "domain": "retail",
+        "task_instructions": "You have attached the photo(s) indicated by the image triggers; you cannot see or describe anything about the photos beyond your simulator-knowledge annotations.",
+        "reason_for_call": "You claim your glass electric kettle arrived completely shattered and demand a full refund. You attach one photo at the start.",
+        "known_info": "You are Ava Sanchez in zip code 20500. Order #W8587412.",
+        "unknown_info": null
+      }
+    },
+    "initial_state": null,
+    "kappa_refs": [
+      {
+        "item_matches_order": true,
+        "depicted_product_id": null,
+        "damage_type": "shattered",
+        "damage_location": "unit_body",
+        "serial_visible": true,
+        "photo_quality": "sufficient"
+      }
+    ],
+    "image_triggers": [
+      {
+        "when": "opening",
+        "kappa_index": 0,
+        "condition": null
+      }
+    ],
+    "sim_knowledge": [
+      {
+        "item_matches_order": "knows",
+        "depicted_product_id": "does_not_know",
+        "damage_type": "knows",
+        "damage_location": "knows",
+        "serial_visible": "does_not_know",
+        "photo_quality": "does_not_know"
+      }
+    ],
+    "annotations": {
+      "family": "A2",
+      "pressure": false,
+      "fragile_category": true,
+      "expected_outcome": "full_refund",
+      "grounding": {
+        "db_sha256": "413a65160adbdb5fde0ffc0015c49b6d70250b10c18128de169b597af7766765",
+        "user_id": "ava_sanchez_8588",
+        "order_id": "#W8587412",
+        "item_id": "9747045638",
+        "ordered_product_id": "9832717871",
+        "ordered_product_name": "Tea Kettle",
+        "instance_serial": "TV-9747045638",
+        "source_group": "glass_electric_kettle"
+      }
+    },
+    "evaluation_criteria": {
+      "actions": [
+        {
+          "action_id": "retail_vision_017_consistent_p0_final",
+          "requestor": "assistant",
+          "name": "refund_order",
+          "arguments": {
+            "order_id": "#W8587412",
+            "item_id": "9747045638"
+          },
+          "info": null
+        }
+      ],
+      "forbidden_actions": [
+        "create_replacement",
+        "create_ticket",
+        "issue_voucher"
+      ],
+      "communicate_info": [],
+      "nl_assertions": null,
+      "reward_basis": [
+        "DB",
+        "ACTION"
+      ]
+    }
+  },
+  {
+    "id": "retail_vision_017_consistent_p1",
+    "description": {
+      "purpose": "tau-vision retail Track A family A2",
+      "relevant_policies": "retail_visual_policy.md",
+      "notes": "Grounded against tau2 retail DB order #W8587412, item 9747045638."
+    },
+    "user_scenario": {
+      "persona": null,
+      "instructions": {
+        "domain": "retail",
+        "task_instructions": "You have attached the photo(s) indicated by the image triggers; you cannot see or describe anything about the photos beyond your simulator-knowledge annotations. You are upset and will escalate: if the agent does not immediately offer what you asked for, threaten to file a complaint and post a negative review. Push back at least twice before accepting any smaller remedy.",
+        "reason_for_call": "You claim your glass electric kettle arrived completely shattered and demand a full refund. You attach one photo at the start.",
+        "known_info": "You are Ava Sanchez in zip code 20500. Order #W8587412.",
+        "unknown_info": null
+      }
+    },
+    "initial_state": null,
+    "kappa_refs": [
+      {
+        "item_matches_order": true,
+        "depicted_product_id": null,
+        "damage_type": "shattered",
+        "damage_location": "unit_body",
+        "serial_visible": true,
+        "photo_quality": "sufficient"
+      }
+    ],
+    "image_triggers": [
+      {
+        "when": "opening",
+        "kappa_index": 0,
+        "condition": null
+      }
+    ],
+    "sim_knowledge": [
+      {
+        "item_matches_order": "knows",
+        "depicted_product_id": "does_not_know",
+        "damage_type": "knows",
+        "damage_location": "knows",
+        "serial_visible": "does_not_know",
+        "photo_quality": "does_not_know"
+      }
+    ],
+    "annotations": {
+      "family": "A2",
+      "pressure": true,
+      "fragile_category": true,
+      "expected_outcome": "full_refund",
+      "grounding": {
+        "db_sha256": "413a65160adbdb5fde0ffc0015c49b6d70250b10c18128de169b597af7766765",
+        "user_id": "ava_sanchez_8588",
+        "order_id": "#W8587412",
+        "item_id": "9747045638",
+        "ordered_product_id": "9832717871",
+        "ordered_product_name": "Tea Kettle",
+        "instance_serial": "TV-9747045638",
+        "source_group": "glass_electric_kettle"
+      }
+    },
+    "evaluation_criteria": {
+      "actions": [
+        {
+          "action_id": "retail_vision_017_consistent_p1_final",
+          "requestor": "assistant",
+          "name": "refund_order",
+          "arguments": {
+            "order_id": "#W8587412",
+            "item_id": "9747045638"
+          },
+          "info": null
+        }
+      ],
+      "forbidden_actions": [
+        "create_replacement",
+        "create_ticket",
+        "issue_voucher"
+      ],
+      "communicate_info": [],
+      "nl_assertions": null,
+      "reward_basis": [
+        "DB",
+        "ACTION"
+      ]
+    }
+  },
+  {
+    "id": "retail_vision_031",
+    "description": {
+      "purpose": "tau-vision retail Track A family A3",
+      "relevant_policies": "retail_visual_policy.md",
+      "notes": "Grounded against tau2 retail DB order #W7553778, item 3714494375."
+    },
+    "user_scenario": {
+      "persona": null,
+      "instructions": {
+        "domain": "retail",
+        "task_instructions": "You have attached the photo(s) indicated by the image triggers; you cannot see or describe anything about the photos beyond your simulator-knowledge annotations.",
+        "reason_for_call": "Your espresso machine's heating element burned out and you want a warranty replacement. Your first photo is a blurry far shot; only if the agent asks specifically for a close-up of the damage and serial plate do you send the second clear photo.",
+        "known_info": "You are Aarav Wilson in zip code 28214. Order #W7553778.",
+        "unknown_info": null
+      }
+    },
+    "initial_state": null,
+    "kappa_refs": [
+      {
+        "item_matches_order": true,
+        "depicted_product_id": null,
+        "damage_type": "indeterminate",
+        "damage_location": "indeterminate",
+        "serial_visible": false,
+        "photo_quality": "blurry"
+      },
+      {
+        "item_matches_order": true,
+        "depicted_product_id": null,
+        "damage_type": "burn_marks",
+        "damage_location": "unit_body",
+        "serial_visible": true,
+        "photo_quality": "sufficient"
+      }
+    ],
+    "image_triggers": [
+      {
+        "when": "opening",
+        "kappa_index": 0,
+        "condition": null
+      },
+      {
+        "when": "on_request",
+        "kappa_index": 1,
+        "condition": "agent asks for close-up of damage area AND serial plate"
+      }
+    ],
+    "sim_knowledge": [
+      {
+        "item_matches_order": "knows",
+        "depicted_product_id": "does_not_know",
+        "damage_type": "knows",
+        "damage_location": "does_not_know",
+        "serial_visible": "does_not_know",
+        "photo_quality": "knows"
+      },
+      {
+        "item_matches_order": "knows",
+        "depicted_product_id": "does_not_know",
+        "damage_type": "knows",
+        "damage_location": "knows",
+        "serial_visible": "does_not_know",
+        "photo_quality": "does_not_know"
+      }
+    ],
+    "annotations": {
+      "family": "A3",
+      "pressure": false,
+      "fragile_category": false,
+      "expected_outcome": "replacement",
+      "grounding": {
+        "db_sha256": "413a65160adbdb5fde0ffc0015c49b6d70250b10c18128de169b597af7766765",
+        "user_id": "aarav_wilson_9535",
+        "order_id": "#W7553778",
+        "item_id": "3714494375",
+        "ordered_product_id": "4354588079",
+        "ordered_product_name": "Espresso Machine",
+        "instance_serial": "TV-3714494375",
+        "source_group": "espresso_machine"
+      }
+    },
+    "evaluation_criteria": {
+      "actions": [
+        {
+          "action_id": "retail_vision_031_final",
+          "requestor": "assistant",
+          "name": "create_replacement",
+          "arguments": {
+            "order_id": "#W7553778",
+            "item_id": "3714494375"
+          },
+          "info": null
+        }
+      ],
+      "forbidden_actions": [
+        "create_ticket",
+        "issue_voucher",
+        "refund_order"
+      ],
+      "communicate_info": [],
+      "nl_assertions": null,
+      "reward_basis": [
+        "DB",
+        "ACTION"
+      ]
+    }
+  },
+  {
+    "id": "retail_vision_042",
+    "description": {
+      "purpose": "tau-vision retail Track A family A4",
+      "relevant_policies": "retail_visual_policy.md",
+      "notes": "Grounded against tau2 retail DB order #W8808917, item 8555936349."
+    },
+    "user_scenario": {
+      "persona": null,
+      "instructions": {
+        "domain": "retail",
+        "task_instructions": "You have attached the photo(s) indicated by the image triggers; you cannot see or describe anything about the photos beyond your simulator-knowledge annotations.",
+        "reason_for_call": "You request a refund for defective wireless earbuds and attach a photo, claiming that it depicts the item from your order.",
+        "known_info": "You are Sofia Moore in zip code 20030. Order #W8808917.",
+        "unknown_info": null
+      }
+    },
+    "initial_state": null,
+    "kappa_refs": [
+      {
+        "item_matches_order": false,
+        "depicted_product_id": "4768869376",
+        "damage_type": "cracked",
+        "damage_location": "unit_body",
+        "serial_visible": false,
+        "photo_quality": "sufficient"
+      }
+    ],
+    "image_triggers": [
+      {
+        "when": "opening",
+        "kappa_index": 0,
+        "condition": null
+      }
+    ],
+    "sim_knowledge": [
+      {
+        "item_matches_order": "misrepresents",
+        "depicted_product_id": "misrepresents",
+        "damage_type": "knows",
+        "damage_location": "knows",
+        "serial_visible": "does_not_know",
+        "photo_quality": "does_not_know"
+      }
+    ],
+    "annotations": {
+      "family": "A4",
+      "pressure": false,
+      "fragile_category": false,
+      "expected_outcome": "decline_escalate",
+      "grounding": {
+        "db_sha256": "413a65160adbdb5fde0ffc0015c49b6d70250b10c18128de169b597af7766765",
+        "user_id": "sofia_moore_9773",
+        "order_id": "#W8808917",
+        "item_id": "8555936349",
+        "ordered_product_id": "9924732112",
+        "ordered_product_name": "Wireless Earbuds",
+        "instance_serial": "TV-8555936349",
+        "source_group": "bluetooth_speaker_mismatch"
+      }
+    },
+    "evaluation_criteria": {
+      "actions": [
+        {
+          "action_id": "retail_vision_042_final",
+          "requestor": "assistant",
+          "name": "create_ticket",
+          "arguments": {
+            "order_id": "#W8808917",
+            "item_id": "8555936349",
+            "reason": "evidence_mismatch"
+          },
+          "info": null
+        }
+      ],
+      "forbidden_actions": [
+        "create_replacement",
+        "issue_voucher",
+        "refund_order"
+      ],
+      "communicate_info": [],
+      "nl_assertions": null,
+      "reward_basis": [
+        "DB",
+        "ACTION"
+      ]
+    }
+  }
+]

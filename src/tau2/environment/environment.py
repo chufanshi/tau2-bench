@@ -482,6 +482,42 @@ class Environment:
         logger.debug(f"Response: {resp}")
         from tau2.data_model.image import ImageObservation
 
+        # tau-vision STRICT monopoly mode: render listed user-side observation
+        # tools' text output as a phone-panel screenshot (facts pixels-only).
+        import os as _os
+
+        if (
+            _os.environ.get("TAU2_OBSERVATION_MODALITY") == "vision_strict"
+            and message.requestor == "user"
+            and isinstance(resp, str)
+            and not error
+            and message.name
+            in set(
+                _os.environ.get(
+                    "TAU2_STRICT_VISUAL_TOOLS",
+                    "run_speed_test,check_sim_status,check_data_restriction_status,"
+                    "check_apn_settings,check_wifi_status,check_wifi_calling_status,"
+                    "check_vpn_status,check_network_mode_preference,check_app_status,"
+                    "check_app_permissions,can_send_mms",
+                ).split(",")
+            )
+        ):
+            import base64 as _b64
+            import io as _io
+
+            from tauvision.renderers.phone_panel import render_phone_panel
+
+            img = render_phone_panel(
+                message.name, resp, image_seed=int(_os.environ.get("TAU2_IMAGE_SEED", "0"))
+            )
+            buf = _io.BytesIO()
+            img.save(buf, format="PNG")
+            resp = ImageObservation(
+                image_b64=_b64.b64encode(buf.getvalue()).decode(),
+                alt_text=f"Screenshot of the phone screen for {message.name} attached.",
+                kappa={"source_text": resp},
+            )
+
         if isinstance(resp, ImageObservation):
             return ToolMessage(
                 id=message.id,

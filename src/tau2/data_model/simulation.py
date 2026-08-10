@@ -300,6 +300,16 @@ class BaseRunConfig(BaseModel):
             default=None,
         ),
     ]
+    vision_release_dir: Annotated[
+        Optional[str],
+        Field(
+            description=(
+                "Published tau-vision release directory containing tasks.json, "
+                "image_registry.json, and frozen assets."
+            ),
+            default=None,
+        ),
+    ]
     num_tasks: Annotated[
         Optional[int],
         Field(
@@ -508,7 +518,13 @@ class BaseRunConfig(BaseModel):
 
     def validate(self) -> None:
         """Validate the run config."""
-        pass
+        if self.vision_release_dir is not None:
+            if self.domain != "retail-vision":
+                raise ValueError(
+                    "vision_release_dir is only valid for the retail-vision domain"
+                )
+            if self.is_voice:
+                raise ValueError("tau-vision image triggers currently require text mode")
 
 
 class TextRunConfig(BaseRunConfig):

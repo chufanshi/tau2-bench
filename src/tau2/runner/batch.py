@@ -873,12 +873,31 @@ def run_domain(config: RunConfig) -> Results:
 
     # Load tasks
     task_set_name = config.task_set_name or config.domain
-    tasks = get_tasks(
-        task_set_name=task_set_name,
-        task_split_name=config.task_split_name,
-        task_ids=config.task_ids,
-        num_tasks=config.num_tasks,
-    )
+    if config.vision_release_dir is not None:
+        if task_set_name != "retail-vision":
+            raise ValueError(
+                "--vision-release-dir requires task set retail-vision"
+            )
+        from tau2.domains.retail_vision.environment import get_released_tasks
+
+        tasks = get_released_tasks(
+            Path(config.vision_release_dir),
+            task_split_name=config.task_split_name,
+            task_ids=config.task_ids,
+            num_tasks=config.num_tasks,
+        )
+    else:
+        tasks = get_tasks(
+            task_set_name=task_set_name,
+            task_split_name=config.task_split_name,
+            task_ids=config.task_ids,
+            num_tasks=config.num_tasks,
+        )
+        if any(task.image_triggers for task in tasks):
+            raise ValueError(
+                "visual benchmark tasks require --vision-release-dir with a "
+                "published, human-audited release"
+            )
 
     # Filter tasks based on agent's registered task filter (if any)
     effective_agent = config.effective_agent

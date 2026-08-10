@@ -4,7 +4,7 @@ import json
 import textwrap
 import uuid
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 from typing_extensions import Annotated
@@ -388,6 +388,18 @@ class EvaluationCriteria(BaseModel):
         ),
     ]
 
+    forbidden_actions: Annotated[
+        list[str],
+        Field(
+            description=(
+                "Tool names that make the task fail if the agent calls any of "
+                "them. Checked by the action evaluator when ACTION is in "
+                "reward_basis."
+            ),
+            default_factory=list,
+        ),
+    ]
+
     env_assertions: Annotated[
         Optional[list[EnvAssertion]],
         Field(
@@ -619,6 +631,53 @@ class Task(BaseModel):
             "If empty list, no user tools are available.",
             default=None,
         ),
+    ]
+    kappa_refs: Annotated[
+        Optional[list[dict[str, Any]]],
+        Field(
+            description="Policy-scoped symbolic specifications for task images.",
+            default=None,
+        ),
+    ]
+    image_triggers: Annotated[
+        Optional[list[dict[str, Any]]],
+        Field(
+            description="Script-declared points that release images to the agent.",
+            default=None,
+        ),
+    ]
+    image_bank: Annotated[
+        Optional[list[dict[str, Any]]],
+        Field(
+            description="Published image variants grouped by kappa slot.",
+            default=None,
+        ),
+    ]
+    runtime_image_assets: Annotated[
+        Optional[dict[str, dict[str, str]]],
+        Field(
+            description=(
+                "Runtime-only, hash-validated image payloads loaded from a published "
+                "tau-vision release. Excluded from task/result serialization."
+            ),
+            default=None,
+            exclude=True,
+            repr=False,
+        ),
+    ]
+    sim_knowledge: Annotated[
+        Optional[list[dict[str, str]]],
+        Field(
+            description=(
+                "Per-kappa-slot annotations of what the user simulator knows "
+                "about each visual field."
+            ),
+            default=None,
+        ),
+    ]
+    annotations: Annotated[
+        Optional[dict[str, Any]],
+        Field(description="Benchmark construction annotations.", default=None),
     ]
 
     def __str__(self) -> str:
