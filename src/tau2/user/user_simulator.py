@@ -265,6 +265,26 @@ class UserSimulator(
             raw_data=assistant_message.raw_data,
         )
 
+        # tau-vision: the user forwards screenshots to the support chat.
+        # Attach the most recent tool-result image produced since the user's
+        # last chat message, so the AGENT receives the pixels (previously the
+        # image stopped at the simulator and no model ever saw it).
+        import os as _os
+
+        if _os.environ.get("TAU2_OBSERVATION_MODALITY", "text") in (
+            "vision",
+            "vision_strict",
+        ) and not user_message.is_tool_call():
+            for prev in reversed(state.messages):
+                if isinstance(prev, UserMessage):
+                    break
+                if isinstance(prev, ToolMessage) and getattr(
+                    prev, "image_content", None
+                ):
+                    user_message.image_content = prev.image_content
+                    user_message.image_alt = prev.image_alt
+                    break
+
         # flip the requestor of the tool calls
         if assistant_message.tool_calls is not None:
             user_message.tool_calls = []

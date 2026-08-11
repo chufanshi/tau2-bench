@@ -89,12 +89,16 @@ class UserState(BaseModel):
                     )
             elif isinstance(message, ToolMessage):
                 if message.requestor == "user":
-                    # Only add tool messages for the user
+                    # Only add tool messages for the user.
+                    # tau-vision: preserve image payloads so the simulator's
+                    # LLM actually sees screenshots its tools produced.
                     flipped_messages.append(
                         ToolMessage(
                             id=message.id,
                             role=message.role,
                             content=message.content,
+                            image_content=getattr(message, "image_content", None),
+                            image_alt=getattr(message, "image_alt", None),
                         )
                     )
                 else:
