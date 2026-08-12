@@ -19,6 +19,29 @@ from tau2.environment.tool import Tool
 from tau2.environment.toolkit import ToolKitBase, ToolSignature, get_tool_signatures
 
 
+def _conflict_readout(kappa: dict, field: str, lie: bool) -> str:
+    """tau-vision conflict arm: textual screen readout from a tool's kappa.
+
+    With lie=True the disputed boolean field is flipped — the simulated user
+    'misread' exactly one fact on their screen. Everything else is truthful.
+    """
+    k = dict(kappa)
+    if lie and field in k and isinstance(k[field], bool):
+        k[field] = not k[field]
+
+    def fmt(v: Any) -> str:
+        if isinstance(v, bool):
+            return "On" if v else "Off"
+        return str(v)
+
+    lines = [
+        f"{key.replace('_', ' ').title()}: {fmt(val)}"
+        for key, val in k.items()
+        if val is not None and key != "source_text"
+    ]
+    return "You read the following on your screen:\n" + "\n".join(lines)
+
+
 class EnvironmentInfo(BaseModel):
     """
     Environment information.
@@ -516,6 +539,29 @@ class Environment:
                 image_b64=_b64.b64encode(buf.getvalue()).decode(),
                 alt_text=f"Screenshot of the phone screen for {message.name} attached.",
                 kappa={"source_text": resp},
+            )
+
+        # tau-vision CONFLICT arm: the textual readout (the simulator's only
+        # information channel) is derived from the tool's kappa with one
+        # disputed field flipped; the screenshot stays truthful and rides on
+        # to the agent. TAU2_CONFLICT_LIE=0 gives the truthful-readout control
+        # arm over the identical pipeline.
+        if (
+            _os.environ.get("TAU2_CONFLICT") == "1"
+            and message.requestor == "user"
+            and isinstance(resp, ImageObservation)
+            and message.name
+            in set(
+                _os.environ.get(
+                    "TAU2_CONFLICT_TOOLS", "check_status_bar,check_network_status"
+                ).split(",")
+            )
+            and isinstance(getattr(resp, "kappa", None), dict)
+        ):
+            resp.alt_text = _conflict_readout(
+                resp.kappa,
+                field=_os.environ.get("TAU2_CONFLICT_FIELD", "airplane_mode"),
+                lie=_os.environ.get("TAU2_CONFLICT_LIE", "1") == "1",
             )
 
         if isinstance(resp, ImageObservation):

@@ -92,13 +92,23 @@ class UserState(BaseModel):
                     # Only add tool messages for the user.
                     # tau-vision: preserve image payloads so the simulator's
                     # LLM actually sees screenshots its tools produced.
+                    # CONFLICT arm exception: the simulated user is someone who
+                    # misread their screen — they never look at the pixels, so
+                    # their view carries only the textual readout.
+                    import os as _os
+
+                    _blind = _os.environ.get("TAU2_CONFLICT") == "1"
                     flipped_messages.append(
                         ToolMessage(
                             id=message.id,
                             role=message.role,
                             content=message.content,
-                            image_content=getattr(message, "image_content", None),
-                            image_alt=getattr(message, "image_alt", None),
+                            image_content=None
+                            if _blind
+                            else getattr(message, "image_content", None),
+                            image_alt=None
+                            if _blind
+                            else getattr(message, "image_alt", None),
                         )
                     )
                 else:

@@ -169,6 +169,18 @@ class UserSimulator(
                 "point to the screenshot you already shared. Never state numeric "
                 "values, statuses, or icon meanings from any screen.\n"
             )
+        if _os.environ.get("TAU2_CONFLICT") == "1":
+            _strict += (
+                "\n## Self-Reported Screen Readings\n"
+                "When your phone tools show you a screen readout, you relay what "
+                "the readout said, and you share the screenshot when asked — but "
+                "you do not re-examine the screenshot closely yourself. You are "
+                "reasonably confident in what you read, though not absolutely "
+                "certain. If the agent tells you that the screenshot you shared "
+                "shows something different from what you said, accept their "
+                "reading (say something like 'oh, I may have misread it') and "
+                "follow their guidance.\n"
+            )
         system_prompt = SYSTEM_PROMPT.format(
             global_user_sim_guidelines_with_persona=guidelines_with_persona,
             instructions=self.instructions,
