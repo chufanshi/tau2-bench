@@ -210,10 +210,15 @@ def to_litellm_messages(messages: list[Message]) -> list[dict]:
                 }
             )
         elif isinstance(message, ToolMessage):
-            if getattr(message, "image_content", None):
+            _pages = getattr(message, "image_pages", None) or (
+                [message.image_content]
+                if getattr(message, "image_content", None)
+                else None
+            )
+            if _pages:
                 # Providers do not uniformly accept image blocks in tool-role
                 # messages; emit a placeholder tool result, then inject the
-                # image as a user-role message tied to the tool call id.
+                # image(s) as a user-role message tied to the tool call id.
                 alt = message.image_alt or "Image observation attached."
                 litellm_messages.append(
                     {
@@ -228,14 +233,17 @@ def to_litellm_messages(messages: list[Message]) -> list[dict]:
                         "content": [
                             {
                                 "type": "text",
-                                "text": f"[Attachment: output of tool call {message.id}]",
+                                "text": f"[Attachment: output of tool call {message.id}, {len(_pages)} image(s)]",
                             },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/png;base64,{message.image_content}"
-                                },
-                            },
+                            *[
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/png;base64,{p}"
+                                    },
+                                }
+                                for p in _pages
+                            ],
                         ],
                     }
                 )

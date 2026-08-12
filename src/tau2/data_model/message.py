@@ -577,6 +577,13 @@ class ToolMessage(BaseModel):
         description="Short non-leaking placeholder text for the attached image.",
         default=None,
     )
+    image_pages: Optional[list[str]] = Field(
+        description=(
+            "Multi-page image payload (rendered document pages, base64 PNGs, "
+            "page 1 included). Takes precedence over image_content when set."
+        ),
+        default=None,
+    )
     requestor: Literal["user", "assistant"] = Field(
         "assistant",
         description="The requestor of the tool call.",

@@ -541,6 +541,40 @@ class Environment:
                 kappa={"source_text": resp},
             )
 
+        # tau-vision Line 3 (banking-vision): retrieval payloads as document
+        # pages. The SEARCH ran over the text KB exactly as in the text arm;
+        # only the returned payload is rendered to pixels. Gated by
+        # TAU2_KB_VISION=1; tool list via TAU2_KB_VISUAL_TOOLS.
+        if (
+            _os.environ.get("TAU2_KB_VISION") == "1"
+            and message.requestor == "assistant"
+            and isinstance(resp, str)
+            and not error
+            and message.name
+            in set(_os.environ.get("TAU2_KB_VISUAL_TOOLS", "KB_search,grep").split(","))
+        ):
+            import base64 as _b64
+            import io as _io
+
+            from tauvision.renderers.document_page import render_document_pages
+
+            _imgs = render_document_pages(
+                resp,
+                image_seed=int(_os.environ.get("TAU2_IMAGE_SEED", "0")),
+                title=f"Knowledge Base — {message.name}",
+            )
+            _pages = []
+            for _im in _imgs:
+                _buf = _io.BytesIO()
+                _im.save(_buf, format="PNG")
+                _pages.append(_b64.b64encode(_buf.getvalue()).decode())
+            resp = ImageObservation(
+                image_b64=_pages[0],
+                image_pages=_pages,
+                alt_text=f"{len(_pages)} knowledge-base document page(s) attached.",
+                kappa={"source_text": resp},
+            )
+
         # tau-vision CONFLICT arm: the textual readout (the simulator's only
         # information channel) is derived from the tool's kappa with one
         # disputed field flipped; the screenshot stays truthful and rides on
@@ -570,6 +604,7 @@ class Environment:
                 content=resp.alt_text,
                 image_content=resp.image_b64,
                 image_alt=resp.alt_text,
+                image_pages=getattr(resp, "image_pages", None),
                 requestor=message.requestor,
                 role="tool",
                 error=error,
