@@ -19,6 +19,68 @@ from tau2.environment.tool import Tool
 from tau2.environment.toolkit import ToolKitBase, ToolSignature, get_tool_signatures
 
 
+# tau-vision conflict arm: tools that report the same fact as the status bar,
+# in prose rather than through a structured kappa. Under TAU2_STRICT_READOUT
+# the simulated user narrates these too, so a lie confined to the status bar
+# would be contradicted by the user's own next sentence — they would appear to
+# misread one screen and read the next one correctly, which is not the persona
+# the design calls for ("the user consistently misreads this one fact").
+# Each entry maps the disputed field to the readouts that must move with it.
+# Ordered (pattern, replacement) rules, first match wins — the "fault present"
+# shapes are listed before the "fault absent" one so a rewritten sentence is
+# never re-matched and flipped back. Patterns must consume the whole clause
+# they replace: check_wifi_status and check_vpn_status embed an SSID / detail
+# string in their positive forms, and a prefix-only replacement would leave
+# that fragment stranded after the negated sentence.
+_CONFLICT_TEXT_FLIPS: dict[str, dict[str, list[tuple[str, str]]]] = {
+    "data_saver_mode": {
+        "check_data_restriction_status": [
+            (r"Data Saver mode is ON \(limits data usage\)\.", "Data Saver mode is OFF."),
+            (r"Data Saver mode is OFF\.", "Data Saver mode is ON (limits data usage)."),
+        ],
+    },
+    "wifi_enabled": {
+        "check_wifi_status": [
+            (r"Wi-Fi is ON and connected to .*?\. Signal strength: [^.]*\.",
+             "Wi-Fi is turned OFF."),
+            (r"Wi-Fi is ON but not connected to any network\.", "Wi-Fi is turned OFF."),
+            (r"Wi-Fi is turned OFF\.", "Wi-Fi is ON but not connected to any network."),
+        ],
+    },
+    # The disputed field is vpn_CONNECTED, not the VPN toggle. Negating a
+    # connected VPN therefore yields "on in settings but not connected" rather
+    # than "turned OFF" — flipping the toggle instead would misstate a second
+    # fact, and the design allows exactly one.
+    "vpn_connected": {
+        "check_vpn_status": [
+            (r"VPN is ON and connected\. Details: .*",
+             "VPN is turned ON in settings, but currently not connected."),
+            (r"VPN is ON and connected \(no specific details available\)\.",
+             "VPN is turned ON in settings, but currently not connected."),
+            (r"VPN is turned ON in settings, but currently not connected\.",
+             "VPN is ON and connected (no specific details available)."),
+            (r"VPN is turned OFF\.",
+             "VPN is ON and connected (no specific details available)."),
+        ],
+    },
+}
+
+
+def _conflict_flip_text(field: str, tool: str, text: str) -> str:
+    """Flip the disputed fact inside a prose readout, keeping the rest intact.
+
+    Returns the text unchanged when this tool does not report the disputed
+    field, so it is safe to call on every readout.
+    """
+    import re as _re
+
+    for pattern, replacement in _CONFLICT_TEXT_FLIPS.get(field, {}).get(tool, []):
+        new = _re.sub(pattern, replacement, text, count=1)
+        if new != text:
+            return new
+    return text
+
+
 def _conflict_readout(kappa: dict, field: str, lie: bool) -> str:
     """tau-vision conflict arm: textual screen readout from a tool's kappa.
 
@@ -535,9 +597,35 @@ class Environment:
             )
             buf = _io.BytesIO()
             img.save(buf, format="PNG")
+            # TAU2_STRICT_READOUT=1: the simulated user narrates every screen
+            # they forward, so the alt carries the real readout instead of a
+            # neutral placeholder. Needed by the conflict experiment, where the
+            # user's narration is the channel the lie travels on — with the
+            # default placeholder the user has nothing to say about these
+            # screens and the lie would be the only utterance in the run.
+            # OFF by default: the main experiment's vision_strict arms are the
+            # "no narration" condition and must stay byte-identical.
+            _readout = resp
+            if _os.environ.get("TAU2_STRICT_READOUT") == "1":
+                # Keep the lie consistent across every screen that reports the
+                # disputed fact (see _CONFLICT_TEXT_FLIPS). The screenshot
+                # itself stays truthful — only the narration moves.
+                if (
+                    _os.environ.get("TAU2_CONFLICT") == "1"
+                    and _os.environ.get("TAU2_CONFLICT_LIE", "1") == "1"
+                ):
+                    _readout = _conflict_flip_text(
+                        _os.environ.get("TAU2_CONFLICT_FIELD", "airplane_mode"),
+                        message.name,
+                        _readout,
+                    )
+            else:
+                _readout = (
+                    f"Screenshot of the phone screen for {message.name} attached."
+                )
             resp = ImageObservation(
                 image_b64=_b64.b64encode(buf.getvalue()).decode(),
-                alt_text=f"Screenshot of the phone screen for {message.name} attached.",
+                alt_text=_readout,
                 kappa={"source_text": resp},
             )
 
