@@ -44,9 +44,32 @@ def _format_kb_search_result(pipeline, retrieval_result) -> str:
     return output
 
 
+def _topk_cap(top_k: int | None) -> int | None:
+    """tau-vision EXP4: clamp how many documents a retrieval call returns.
+
+    Why this exists: with the default top_k=10 a single KB_search comes back as
+    a median of 8 rendered pages (max 22) in the vision arm, so "the cost of
+    reading a document" and "the cost of a context that grew to tens of
+    thousands of tokens" are measured together (EXP4 §7). Capping here — above
+    the modality hook, on the retrieval result itself — keeps BOTH arms on the
+    same documents: the text arm loses exactly the excerpts the vision arm
+    loses, so the cap changes the dose, never the information asymmetry.
+
+    Unset (the default) leaves upstream behaviour byte-identical.
+    """
+    import os as _os
+
+    raw = _os.environ.get("TAU2_KB_TOPK_CAP")
+    if not raw:
+        return top_k
+    cap = int(raw)
+    return cap if top_k is None else min(top_k, cap)
+
+
 def _run_kb_search(pipeline, query: str, top_k: int | None = None) -> str:
     """Run a KB search pipeline with timing and shared formatting."""
     retrieve_kwargs = {"return_timing": True}
+    top_k = _topk_cap(top_k)
     if top_k is not None:
         retrieve_kwargs["top_k"] = top_k
     retrieval_result = pipeline.retrieve(query, **retrieve_kwargs)
@@ -93,6 +116,12 @@ class GrepMixin(metaclass=ToolKitType):
             Matching documents ranked by relevance (match count)
         """
         results = self._grep_pipeline.retrieve(pattern)
+
+        # Same dose cap as KB_search — grep returns FULL document content, so
+        # it is the heavier of the two payload sources (EXP4 §7).
+        _cap = _topk_cap(None)
+        if _cap is not None:
+            results = results[:_cap]
 
         if not results:
             return f"No matches found for pattern: {pattern}"
