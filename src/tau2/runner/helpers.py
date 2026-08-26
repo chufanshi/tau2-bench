@@ -179,11 +179,21 @@ def get_info(config: RunConfig, **overrides) -> Info:
         if rk:
             info_env_kwargs["retrieval_kwargs"] = rk
 
-    environment_info = get_environment_info(
-        config.domain, include_tool_info=False, env_kwargs=info_env_kwargs
-    )
     if policy_override is not None:
-        environment_info.policy = policy_override
+        # Task-specific retrieval variants intentionally reject environment
+        # construction without a current task.  At run-info time there is no
+        # single task, and tool definitions are not requested, so materialize
+        # the metadata-only record directly from the explicit override.  The
+        # simulation path still constructs an environment per task and cannot
+        # use this metadata placeholder as an executable policy.
+        environment_info = EnvironmentInfo(
+            domain_name=config.domain,
+            policy=policy_override,
+        )
+    else:
+        environment_info = get_environment_info(
+            config.domain, include_tool_info=False, env_kwargs=info_env_kwargs
+        )
 
     return Info(
         git_commit=get_commit_hash(),

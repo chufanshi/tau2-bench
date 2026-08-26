@@ -4,15 +4,23 @@ from typing import Callable, Dict, Optional
 from loguru import logger
 from pydantic import BaseModel
 
+from tau2.agent.complementary_inplace_system_agent import (
+    ComplementaryInplaceSystemAgent,
+    create_complementary_inplace_system_agent,
+)
 from tau2.agent.discrete_time_audio_native_agent import (
     create_discrete_time_audio_native_agent,
 )
+from tau2.agent.golden_multimodal_agent import create_golden_multimodal_agent
 from tau2.agent.llm_agent import (
     LLMGTAgent,
     LLMSoloAgent,
     create_llm_agent,
     create_llm_gt_agent,
     create_llm_solo_agent,
+)
+from tau2.agent.selected_complementary_agent import (
+    create_selected_complementary_agent,
 )
 from tau2.data_model.tasks import Task
 from tau2.domains.airline.environment import (
@@ -304,6 +312,19 @@ try:
 
     # Agent factories
     registry.register_agent_factory(create_llm_agent, "llm_agent")
+    registry.register_agent_factory(
+        create_golden_multimodal_agent,
+        "llm_agent_golden_multimodal",
+    )
+    registry.register_agent_factory(
+        create_selected_complementary_agent,
+        "llm_agent_selected_complementary_v1",
+    )
+    registry.register_agent_factory(
+        create_complementary_inplace_system_agent,
+        "llm_agent_complementary_inplace_system_v2",
+        task_filter=ComplementaryInplaceSystemAgent.check_valid_task,
+    )
     registry.register_agent_factory(
         create_llm_gt_agent,
         "llm_agent_gt",

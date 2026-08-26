@@ -35,6 +35,10 @@ requires_all_tools_deps = pytest.mark.skipif(
     not os.environ.get("OPENAI_API_KEY") or shutil.which("srt") is None,
     reason="alltools requires OPENAI_API_KEY and sandbox-runtime (srt)",
 )
+requires_all_tools_qwen_deps = pytest.mark.skipif(
+    not os.environ.get("OPENROUTER_API_KEY") or shutil.which("srt") is None,
+    reason="alltools-qwen requires OPENROUTER_API_KEY and sandbox-runtime (srt)",
+)
 DOCUMENTS: List[Dict[str, Any]] = [
     {
         "id": "doc_mortgage",
@@ -108,6 +112,8 @@ _ALL_VARIANTS = [
     ("no_knowledge", set(), None),
     ("full_kb", set(), None),
     ("golden_retrieval", set(), None),
+    ("golden_retrieval_fulltext_partialimage", set(), None),
+    ("golden_retrieval_selected_complementary_v1", set(), None),
     ("bm25", {"KB_search"}, None),
     ("bm25_reranker", {"KB_search"}, None),
     ("bm25_grep", {"KB_search", "grep"}, None),
@@ -128,6 +134,11 @@ _ALL_VARIANTS = [
         {"KB_search_bm25", "KB_search_dense", "shell"},
         "all_tools",
     ),
+    (
+        "alltools-qwen",
+        {"KB_search_bm25", "KB_search_dense", "shell"},
+        "all_tools_qwen",
+    ),
 ]
 
 
@@ -140,6 +151,8 @@ def _api_mark(gate):
         return requires_sandbox_runtime
     if gate == "all_tools":
         return requires_all_tools_deps
+    if gate == "all_tools_qwen":
+        return requires_all_tools_qwen_deps
     return pytest.mark.skipif(False, reason="")
 
 
@@ -494,6 +507,7 @@ class TestPolicyTemplateIntegrity:
             "no_knowledge",
             "full_kb",
             "golden_retrieval",
+            "golden_retrieval_fulltext_partialimage",
             "bm25",
             "bm25_grep",
             "grep_only",
@@ -546,6 +560,26 @@ class TestPolicyTemplateIntegrity:
             doc = knowledge_base.get_document(doc_ref)
             if doc:
                 assert doc.title in policy
+
+    def test_multimodal_variant_preserves_exact_golden_text_policy(
+        self, knowledge_base
+    ):
+        from tau2.domains.banking_knowledge.environment import get_tasks
+        from tau2.domains.banking_knowledge.retrieval import (
+            build_policy,
+            resolve_variant,
+        )
+
+        task = next(t for t in get_tasks() if t.required_documents)
+        text_policy = build_policy(
+            resolve_variant("golden_retrieval"), knowledge_base, task
+        )
+        multimodal_policy = build_policy(
+            resolve_variant("golden_retrieval_fulltext_partialimage"),
+            knowledge_base,
+            task,
+        )
+        assert multimodal_policy == text_policy
 
 
 class TestQueryStateIsolation:

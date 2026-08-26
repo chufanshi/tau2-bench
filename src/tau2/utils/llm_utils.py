@@ -69,6 +69,9 @@ else:
     litellm.success_callback = []
 
 litellm.drop_params = True
+# Multimodal system messages can contain large inline PNGs. Provider errors
+# must not echo those bytes into console logs or persisted traceback output.
+litellm.redact_messages_in_exceptions = True
 
 warnings.filterwarnings(
     "ignore",
@@ -172,17 +175,19 @@ def to_litellm_messages(messages: list[Message]) -> list[dict]:
     litellm_messages = []
     for message in messages:
         if isinstance(message, UserMessage):
-            if getattr(message, "image_content", None):
+            image_pages = message.image_pages or (
+                [message.image_content] if message.image_content else None
+            )
+            if image_pages:
                 blocks = []
                 if message.content:
                     blocks.append({"type": "text", "text": message.content})
-                blocks.append(
+                blocks.extend(
                     {
                         "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{message.image_content}"
-                        },
+                        "image_url": {"url": f"data:image/png;base64,{page}"},
                     }
+                    for page in image_pages
                 )
                 litellm_messages.append({"role": "user", "content": blocks})
             else:
@@ -238,9 +243,7 @@ def to_litellm_messages(messages: list[Message]) -> list[dict]:
                             *[
                                 {
                                     "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:image/png;base64,{p}"
-                                    },
+                                    "image_url": {"url": f"data:image/png;base64,{p}"},
                                 }
                                 for p in _pages
                             ],
@@ -265,22 +268,46 @@ def validate_message(message: Message) -> None:
     Validate the message.
     """
 
-    def has_text_content(message: Message) -> bool:
-        """
-        Check if the message has text content.
-        """
-        return message.content is not None and bool(message.content.strip())
-
     def has_content_or_tool_calls(message: ParticipantMessageBase) -> bool:
         """
         Check if the message has content or tool calls.
         """
         return message.has_content() or message.is_tool_call()
 
+    def validate_system_content(message: SystemMessage) -> None:
+        """Validate plain-text or ordered multimodal system content."""
+        content = message.content
+        assert content is not None, f"System message must have content. got {message}"
+        if isinstance(content, str):
+            assert content.strip(), f"System message must have content. got {message}"
+            return
+
+        assert content, f"System message must have content. got {message}"
+        for index, part in enumerate(content):
+            assert isinstance(part, dict), (
+                f"System content part {index} must be an object. got {part!r}"
+            )
+            part_type = part.get("type")
+            assert part_type in {"text", "image_url"}, (
+                f"Unsupported system content part type at index {index}: {part_type!r}"
+            )
+            if part_type == "text":
+                text = part.get("text")
+                assert isinstance(text, str) and text != "", (
+                    f"System text part {index} must be a non-empty string."
+                )
+            else:
+                image_url = part.get("image_url")
+                assert isinstance(image_url, dict), (
+                    f"System image part {index} must contain an image_url object."
+                )
+                url = image_url.get("url")
+                assert isinstance(url, str) and url, (
+                    f"System image part {index} must contain a non-empty URL."
+                )
+
     if isinstance(message, SystemMessage):
-        assert has_text_content(message), (
-            f"System message must have content. got {message}"
-        )
+        validate_system_content(message)
     if isinstance(message, ParticipantMessageBase):
         assert has_content_or_tool_calls(message), (
             f"Message must have content or tool calls. got {message}"
@@ -329,9 +356,25 @@ def _format_messages_for_logging(messages: list[dict]) -> list[dict]:
     Returns:
         Modified message list with content split into lines for readability
     """
+
+    def redact_image_data_urls(value):
+        """Copy a request value while removing inline image bytes."""
+        if isinstance(value, dict):
+            return {key: redact_image_data_urls(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [redact_image_data_urls(item) for item in value]
+        if isinstance(value, str) and value.startswith("data:image/"):
+            header, separator, _ = value.partition(",")
+            if separator:
+                return f"{header},<redacted>"
+            return "<redacted data:image URL>"
+        return value
+
     formatted = []
     for msg in messages:
-        msg_copy = msg.copy()
+        # This recursive copy is intentional: a shallow copy followed by image
+        # redaction would mutate the nested blocks used for the actual request.
+        msg_copy = redact_image_data_urls(msg)
         if "content" in msg_copy and isinstance(msg_copy["content"], str):
             # Split content on newlines for better readability
             content_lines = msg_copy["content"].split("\n")

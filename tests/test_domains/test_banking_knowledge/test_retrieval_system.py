@@ -1058,6 +1058,7 @@ class TestRetrievalVariantRegistry:
             "no_knowledge",
             "full_kb",
             "golden_retrieval",
+            "golden_retrieval_fulltext_partialimage",
             "bm25_grep",
             "grep_only",
             "bm25",
@@ -1251,6 +1252,20 @@ class TestGoldenRetrievalVariant:
         variant = resolve_variant("golden_retrieval")
         # golden_prompt requires a real template file; just verify the builder is set
         assert variant.build_prompt is golden_prompt
+
+    def test_multimodal_variant_reuses_golden_prompt_and_template(self):
+        from tau2.domains.banking_knowledge.retrieval import (
+            golden_prompt,
+            resolve_variant,
+        )
+
+        baseline = resolve_variant("golden_retrieval")
+        multimodal = resolve_variant("golden_retrieval_fulltext_partialimage")
+        assert multimodal.build_prompt is golden_prompt
+        assert multimodal.prompt_template == baseline.prompt_template
+        assert multimodal.kb_search is None
+        assert multimodal.grep is None
+        assert multimodal.shell is None
 
 
 class TestBM25GrepVariant:

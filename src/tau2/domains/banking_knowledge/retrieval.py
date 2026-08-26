@@ -385,6 +385,27 @@ def golden_prompt(
     return content
 
 
+def selected_complementary_prompt(
+    template_path: Path,
+    knowledge_base: KnowledgeBase,
+    task: Optional["Task"] = None,
+) -> str:
+    """Load the arm-specific policy from a frozen matched runtime bundle.
+
+    The builder has already rendered and hashed both the original full-text
+    policy and the common ``F_T`` policy. Runtime validation rechecks current
+    source-document hashes and task/document order before returning either.
+    ``template_path`` remains part of the declarative variant for registry
+    compatibility; the frozen policy includes the template expansion itself.
+    """
+    del template_path
+    from tau2.domains.banking_knowledge.selected_complementary import (
+        policy_for_task,
+    )
+
+    return policy_for_task(knowledge_base, task)
+
+
 # ---------------------------------------------------------------------------
 # RetrievalVariant dataclass
 # ---------------------------------------------------------------------------
@@ -446,6 +467,22 @@ RETRIEVAL_VARIANTS: Dict[str, RetrievalVariant] = {
         name="golden_retrieval",
         prompt_template=PROMPTS_DIR / "required_docs.md",
         build_prompt=golden_prompt,
+    ),
+    # The multimodal agent supplies a source-bounded image projection in its
+    # private initial state.  The authoritative text policy deliberately uses
+    # the exact same template and prompt builder as golden_retrieval so the
+    # retrieval condition changes no textual facts or formatting.
+    "golden_retrieval_fulltext_partialimage": RetrievalVariant(
+        name="golden_retrieval_fulltext_partialimage",
+        prompt_template=PROMPTS_DIR / "required_docs.md",
+        build_prompt=golden_prompt,
+    ),
+    # Versioned, fail-closed three-arm runtime. The active arm and frozen
+    # dataset are explicit environment inputs set by the matched runner.
+    "golden_retrieval_selected_complementary_v1": RetrievalVariant(
+        name="golden_retrieval_selected_complementary_v1",
+        prompt_template=PROMPTS_DIR / "required_docs.md",
+        build_prompt=selected_complementary_prompt,
     ),
     "qwen_embeddings_grep": RetrievalVariant(
         name="qwen_embeddings_grep",
@@ -627,11 +664,15 @@ def get_info_policy_override(
     """Compute the policy string for the ``Info`` metadata object.
 
     Called before any tasks run to populate the run's ``Info.environment_info.policy``.
-    For ``golden_retrieval`` (where the policy is task-specific), returns a
+    For golden variants (where the policy is task-specific), returns a
     placeholder string instead of an actual prompt.
     """
     variant = resolve_variant(variant_name or DEFAULT_RETRIEVAL_VARIANT, **kwargs)
-    if variant.name == "golden_retrieval":
+    if variant.name in {
+        "golden_retrieval",
+        "golden_retrieval_fulltext_partialimage",
+        "golden_retrieval_selected_complementary_v1",
+    }:
         return "(Policy is task-specific - see 'policy' field in each simulation)"
     return build_policy(variant, knowledge_base)
 

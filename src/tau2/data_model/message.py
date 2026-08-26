@@ -1,6 +1,6 @@
 import json
 from copy import deepcopy
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -22,6 +22,7 @@ AssistantRole = Literal["assistant"]
 ToolRole = Literal["tool"]
 ToolRequestor = UserRole | AssistantRole
 ParticipantRole = UserRole | AssistantRole
+SystemContent = str | list[dict[str, Any]]
 
 
 class SystemMessage(BaseModel):
@@ -30,8 +31,12 @@ class SystemMessage(BaseModel):
     """
 
     role: SystemRole = Field(description="The role of the message sender.")
-    content: Optional[str] = Field(
-        description="The content of the message.", default=None
+    content: Optional[SystemContent] = Field(
+        description=(
+            "The system content as plain text or ordered multimodal content "
+            "parts accepted by the provider API."
+        ),
+        default=None,
     )
     turn_idx: Optional[int] = Field(
         description="The index of the turn in the conversation.", default=None
@@ -49,8 +54,47 @@ class SystemMessage(BaseModel):
         if self.timestamp is not None:
             lines.append(f"timestamp: {self.timestamp}")
         if self.content is not None:
-            lines.append(f"content: {self.content}")
+            lines.append(f"content: {self.display_content()}")
         return "\n".join(lines)
+
+    def has_content(self) -> bool:
+        """Return whether this message carries non-empty text or image parts."""
+        if isinstance(self.content, str):
+            return bool(self.content.strip())
+        if not isinstance(self.content, list) or not self.content:
+            return False
+        for part in self.content:
+            if not isinstance(part, dict):
+                continue
+            if part.get("type") == "text":
+                text = part.get("text")
+                if isinstance(text, str) and text != "":
+                    return True
+            elif part.get("type") == "image_url":
+                image_url = part.get("image_url")
+                if isinstance(image_url, dict):
+                    url = image_url.get("url")
+                    if isinstance(url, str) and url:
+                        return True
+        return False
+
+    def display_content(self) -> str:
+        """Render content without exposing inline image bytes in displays."""
+        if self.content is None:
+            return ""
+        if isinstance(self.content, str):
+            return self.content
+        rendered: list[str] = []
+        for part in self.content:
+            if not isinstance(part, dict):
+                rendered.append("[Invalid system content part]")
+            elif part.get("type") == "text":
+                rendered.append(str(part.get("text", "")))
+            elif part.get("type") == "image_url":
+                rendered.append("[System image; inline bytes omitted]")
+            else:
+                rendered.append(f"[System content part: {part.get('type')!r}]")
+        return "\n".join(rendered)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, SystemMessage):
@@ -487,6 +531,14 @@ class UserMessage(ParticipantMessageBase):
     """
 
     role: UserRole = Field(description="The role of the message sender.")
+    image_pages: Optional[list[str]] = Field(
+        description=(
+            "Ordered base64-encoded PNG attachments for a multimodal user "
+            "message. Takes precedence over image_content when non-empty."
+        ),
+        default=None,
+        exclude=True,  # Keep large, agent-private image payloads out of results.
+    )
 
     @classmethod
     def text(
