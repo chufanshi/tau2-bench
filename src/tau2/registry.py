@@ -8,6 +8,14 @@ from tau2.agent.complementary_inplace_system_agent import (
     ComplementaryInplaceSystemAgent,
     create_complementary_inplace_system_agent,
 )
+from tau2.agent.complementary_inplace_system_agent_v3 import (
+    ComplementaryInplaceSystemAgentV3,
+    create_complementary_inplace_system_agent_v3,
+)
+from tau2.agent.complementary_inplace_system_agent_v4 import (
+    ComplementaryInplaceSystemAgentV4,
+    create_complementary_inplace_system_agent_v4,
+)
 from tau2.agent.discrete_time_audio_native_agent import (
     create_discrete_time_audio_native_agent,
 )
@@ -324,6 +332,16 @@ try:
         create_complementary_inplace_system_agent,
         "llm_agent_complementary_inplace_system_v2",
         task_filter=ComplementaryInplaceSystemAgent.check_valid_task,
+    )
+    registry.register_agent_factory(
+        create_complementary_inplace_system_agent_v3,
+        "llm_agent_complementary_inplace_system_v3",
+        task_filter=ComplementaryInplaceSystemAgentV3.check_valid_task,
+    )
+    registry.register_agent_factory(
+        create_complementary_inplace_system_agent_v4,
+        "llm_agent_complementary_inplace_system_v4",
+        task_filter=ComplementaryInplaceSystemAgentV4.check_valid_task,
     )
     registry.register_agent_factory(
         create_llm_gt_agent,
